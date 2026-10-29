@@ -1,60 +1,69 @@
 # Explainable Credit Risk
 
-What do intrinsic interpretation, global feature importance and post-hoc explanations reveal about credit-risk predictions, and where do their usefulness and reliability break down?
+MMF1922H · Explainable AI · University of Toronto
 
-This four-person university project studies logistic regression, XGBoost and neural networks using credit-card client data. One member developed logistic regression and its interpretation, one developed XGBoost and its importance analysis, and two developed the neural-network modeling and explanation studies. Predictive performance provides context; the main objective is understanding what each interpretation or explanation answers and what it cannot establish.
+A default probability ranks risk without explaining a customer's score. Analysts also need to understand which inputs matter, whether the reasons are stable, and whether proposed changes are realistic. This four-person project studies those questions through logistic regression, XGBoost and a neural network, with predictive performance as context rather than the main objective.
 
-## Contributions across the three model families
+## Research question
 
-| Model | Completed interpretation / explanation work | Empirical contribution |
+> As models get more opaque, 'trust me, it works' isn't good enough anymore — especially in finance. What tools (SHAP, LIME, counterfactuals) actually let us open the black box, and where do they still fall short?
+
+We distinguish interpretation from post-hoc explanation, assess agreement and sampling stability, and examine whether changing a prediction implies a feasible intervention.
+
+## Research design
+
+Logistic regression provides a readable baseline equation. XGBoost captures nonlinear relationships through trees and lets us examine global importance. A neural network provides a separate setting for prediction-based SHAP, LIME and counterfactual experiments.
+
+The data describe Taiwanese credit-card clients: six months of repayment status, bills and payments, plus credit limit and demographics. The target is next-month default. A probability of at least 0.50 defines a hypothetical high-risk/decline decision, not a deployed underwriting policy.
+
+There are two experimental configurations:
+
+| Setting | A: common modeling setup | B: network explanation study |
 | --- | --- | --- |
-| Logistic regression | Coefficients, odds ratios, global interpretation, correlations and exact local prediction decomposition | PAY_0 has coefficient 0.661 and exp(coefficient) 1.937 per standard deviation; a local prediction is reconstructed as 0.9927. Correlated inputs, rare categories and full one-hot coding limit isolated coefficient interpretations. This is intrinsic interpretability, not SHAP. |
-| XGBoost | Global importance by gain, weight and cover; ranking comparison and gain plot | PAY_0 ranks 1 / 8 / 3 under the three definitions; BILL_AMT1 ranks 10 / 1 / 11. Importance depends on its definition and gives neither direction nor an individual attribution. SHAP, LIME and DiCE are not implemented for this model. |
-| Neural network | Original modeling notebook plus a separate complete SHAP/LIME/DiCE study | Local/global attribution, surrogate explanations, repeated-run stability, method agreement and constrained/unrestricted counterfactuals; the explanation model uses Configuration B below. |
+| Included dataset | UCI Excel, 30,000 rows | PyCaret-source CSV, 24,000 rows |
+| Original predictors | 23; exclude ID and target | 21; also exclude SEX and MARRIAGE |
+| Stratified split | 80/20, seed 42 | 75/25, seed 42 |
+| Training / test rows | 24,000 / 6,000 | 18,000 / 6,000 |
+| Models | Logistic regression, XGBoost, original neural network | Separately fitted neural network |
+| Completed analyses | Logistic interpretation; XGBoost global importance | Kernel SHAP, LIME, stability/agreement, DiCE |
 
-The project compares **types of information**, not explanations of one common model or applicant across all notebooks. Within Configuration B, SHAP, LIME and DiCE do examine the same network and selected applicant.
+Both setups standardize numeric inputs, one-hot encode categories and retain undocumented codes. PyCaret identifies the CSV source, not a training framework. The network notebooks remain separate because their experiments differ. Equal seeds and test sizes do not create identical observations; A/B metrics are not a controlled comparison. See [data provenance](data/README.md).
 
-| Method | Question | Limitation explored |
+## What each explanation provides
+
+| Approach | How it works and what it explains | Implemented for |
 | --- | --- | --- |
-| SHAP | Which inputs contribute relative to a reference population? | Estimation stability; dependence on background and correlated inputs |
-| LIME | Which simple surrogate approximates the model around one case? | Variation across sampled neighborhoods |
-| Counterfactuals (DiCE) | Which input changes cross the decision boundary? | Model validity versus real-world feasibility |
+| Intrinsic interpretation | Coefficients describe the equation; coefficient × transformed input gives a local term. Numeric effects use standard-deviation units; category effects require contrasts. | Logistic regression |
+| Global feature importance | Gain measures average split improvement, weight split frequency, and cover split coverage. These summarize the ensemble, without signed effects or individual explanations. | XGBoost |
+| Local and aggregated attribution | Kernel SHAP estimates contributions against a training-background expectation. Values are in log-odds here; aggregated magnitudes summarize a sample. | Configuration B network |
+| Local surrogate explanation | LIME samples synthetic neighborhoods, weights them by proximity and fits a simpler model to the network's probabilities. Its coefficients describe that local approximation. | Configuration B network |
+| Counterfactual search | DiCE searches for alternative input profiles that cross the classification boundary, first freely and then with selected variables and directions restricted. | Configuration B network |
 
-Attribution, local approximation and decision-boundary changes are different objects. None establishes causality, fairness or trustworthy deployment by itself.
+XGBoost prepares a wrapper and a case but does not execute SHAP, LIME or DiCE. Its completed contribution is global importance. The logistic decomposition is not SHAP.
 
-## Two separate experimental configurations
+## Main empirical findings
 
-| Setting | A: common predictive comparison | B: neural-network explainability |
-| --- | --- | --- |
-| Input | Excel, 30,000 rows | PyCaret CSV, 24,000 rows |
-| Predictors | 23; drop ID and target | 21; also exclude SEX and MARRIAGE |
-| Split | Stratified 80/20, seed 42 | Stratified 75/25, seed 42 |
-| Train / test rows | 24,000 / 6,000 | 18,000 / 6,000 |
-| Categorical inputs | SEX, EDUCATION, MARRIAGE | EDUCATION |
-| Models | Logistic regression, MLP, XGBoost | Separate MLP |
-| Decision rule | Default probability >= 0.50 | Default probability >= 0.50 |
+| Evidence from saved outputs | Interpretation |
+| --- | --- |
+| Logistic PAY_0 coefficient 0.661; exp(coefficient) 1.937. Local probability reconstructed as 0.9927. | A one-standard-deviation increase multiplies fitted conditional odds by about 1.94, holding other inputs fixed. Transparency does not remove ambiguity from rare categories or correlated inputs. |
+| XGBoost PAY_0 ranks 1/8/3 under gain/weight/cover; BILL_AMT1 ranks 10/1/11. | The answer to “which feature is important?” depends on the definition. Importance is neither an individual reason nor a causal effect. |
+| Global SHAP: 200 sampled cases; largest mean absolute attribution is PAY_0, 0.601663. Locally it contributes +1.556 log-odds; default probability is 0.685. | Aggregated patterns and local contributions differ. A high-risk prediction also contains offsets. |
+| Five SHAP runs: unchanged top four against run zero; maximum range 0.012. Twenty LIME runs: pairwise overlap 2.61/4. Between methods: 2/4, PAY_0 and LIMIT_BAL. | Agreement is partial. Different stability definitions, one model/background/applicant: these are not a universal explainer ranking. |
+| All five free and five constrained DiCE examples cross below 0.50. Selected constrained probabilities include 0.246 after a large payment change and 0.212 after rewriting repayment status. | Successful model-input changes need not be affordable, financially consistent or actionable. Constraints expose assumptions but do not establish causal interventions. |
 
-Both configurations standardize numeric inputs and one-hot encode the listed categorical inputs, retaining undocumented codes. Preprocessing is fitted on the outer training set. The same seed does not make different input populations share a test set. **Metrics from A and B are not directly comparable.** Excluding demographic inputs in B does not establish fairness.
+Local cases differ across model families; only the methods inside B explain the same network and applicant. LIME means omit absent features, and surrogate fidelity is unreported.
 
-The logistic baseline uses `LogisticRegression(max_iter=1000, random_state=42)` with existing defaults. Both MLPs use `(64, 32)` hidden layers, ReLU, Adam, alpha 0.0001, initial learning rate 0.001, batch size 256, at most 300 epochs, validation fraction 0.15 and early-stopping patience 20. XGBoost uses depth 4, minimum child weight 5, at most 2,000 rounds, learning rate 0.03, row/column subsampling 0.8, lambda 1.0, histogram trees, log-loss and early-stopping patience 50 on a stratified 15% inner validation split. The notebooks contain the complete preserved estimators.
+These tools provide complementary views of model behavior, not evidence of fairness or causality. The proposed SHAP correlated-feature stress test remains unimplemented.
 
-## Implemented post-hoc explanation experiments
+## Results and reproducibility
 
-Configuration A compares predictive performance, explains logistic coefficients and reconstructs one prediction algebraically. XGBoost includes built-in importance, correlations, a raw-input prediction wrapper and applicant selection. It **does not execute SHAP, LIME or DiCE**.
+[RESULTS.md](RESULTS.md) records predictive metrics, source cells, dataset fingerprints, previous execution checks and unresolved questions. The included notebooks preserve their saved outputs.
 
-Configuration B applies all three methods to the same network and applicant (saved CSV index 15110, default probability 0.685):
+Previous checks reproduced logistic/network metrics at displayed precision and the main explanation summaries. XGBoost's historical fit and two constrained DiCE probabilities differed in verification; both versions remain documented. A fresh installation is unverified. The publication audit performed no new training or explanation runs.
 
-- Kernel SHAP: 100 real background rows; local waterfall with 2,000 samples; five-seed local stability experiment; global summary on 200 test cases with 500 samples each.
-- LIME: 5,000 samples per explanation; 20 seeds; top-four overlap and conditional weight summaries.
-- DiCE random search: five free and five constrained counterfactuals. The constrained search varies PAY_0 and BILL_AMT1 downward and PAY_AMT1/PAY_AMT2 upward, with payment caps based on training percentiles.
+Other limits include preprocessing fitted before inner early-stopping validation, ambiguous repayment codes, correlated histories, a selected local case and unassessed duplicate overlap across partitions. Operational threshold selection, calibration, temporal validation and fairness assessment would require further work.
 
-Saved outputs show SHAP top-four overlap of 4/4 against the first run, mean pairwise LIME overlap of 2.61/4, and SHAP/LIME rank overlap of 2/4. These use different comparison definitions and cover one applicant. All ten saved counterfactuals cross the threshold; this does not demonstrate actionable financial advice.
-
-The proposed SHAP correlated-feature attribution stress test is not implemented. Correlation matrices and repeated sampling seeds do not substitute for it. Historical XGBoost slide claims retained in notebook 04 are explicitly unverified; the source slides/model are absent.
-
-See [results and reproducibility](RESULTS.md) for separate metric tables, provenance and scientific limitations, and the [data dictionary](data/README.md) for dataset details.
-
-## Repository and reading order
+## Repository and presentation
 
 ```text
 README.md
@@ -70,49 +79,43 @@ notebooks/
     03_xgboost.ipynb
     04_neural_network_explainability.ipynb
 presentation/
-    project_presentation.pptx
-    presentation_script.md
-    speaker_cheatsheet.md
+    final_group_presentation.pptx
 ```
 
-Each notebook is self-contained. Read 01-03 for Configuration A and 04 for the complete neural-network explanation experiment in B. Notebooks 02 and 04 remain separate because their datasets, predictors and splits differ; attaching the explanations in 04 to the fitted model in 02 would misrepresent the experiment. Their repeated modeling code is preserved intentionally. PyCaret identifies the CSV source, not a modeling framework used by this project.
+Notebooks 01–03 cover A; notebook 04 contains B's complete explanation study. Run them independently. Figures and tables are embedded; XGBoost also generates an optional `figures/` directory.
 
-There is no required combined notebook, shared runtime or serialized trained model. Plots are embedded; running XGBoost also creates an optional `figures/` directory with two PNGs.
+The [final editable PowerPoint](presentation/final_group_presentation.pptx) presents the three model families in ten slides. Four consecutive speaker sections have 2:30 scheduled each. Embedded notes contain the spoken explanations and source details. The assignment's ten-minute maximum requires rehearsal; the schedule alone leaves no overrun buffer.
 
-## Group presentation
+## Installation and execution
 
-- [Editable PowerPoint](presentation/project_presentation.pptx): ten slides with four consecutive speaking sections.
-- [Complete English script](presentation/presentation_script.md): slide timings and handovers; each speaker has a scheduled 2:30, totaling 10:00.
-- [Speaker cheatsheet](presentation/speaker_cheatsheet.md): individual rehearsal cues and likely questions.
+The dependency manifest pins direct packages from the checked Python 3.14.7 environment. It is neither a recovered historical environment nor a complete transitive lockfile. Use a separate environment and select its kernel explicitly.
 
-Speaker 1 presents the question and logistic interpretation (slides 1-3); Speaker 2 presents XGBoost importance (4-5); Speaker 3 presents the neural-network context and SHAP (6-7); Speaker 4 presents LIME, stability, DiCE and the shared conclusions (8-10). Delivery time depends on speaking pace and pauses; the schedule is a rehearsal target. Speaker notes reproduce the spoken script. The presentation uses recorded evidence and does not add experiments.
-
-## Run locally
-
-The checked local environment uses Python 3.14.7. `requirements.txt` records installed direct dependencies, not a recovered historical environment or complete transitive lockfile. A fresh installation has not been verified; see `RESULTS.md` for actual execution checks.
+From the repository root on Windows PowerShell:
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe -m jupyterlab
+.\.venv\Scripts\python.exe -m ipykernel install --sys-prefix --name explainable-credit-risk --display-name "Explainable Credit Risk"
+.\.venv\Scripts\python.exe -m jupyterlab --notebook-dir=notebooks
 ```
 
-Open each notebook under `notebooks/`, choose the environment's kernel and restart/run all independently. **The kernel working directory must be `notebooks/`** because data paths are relative to it. Datasets are included; downloading is unnecessary. Notebook 04 retains its download fallback when the CSV is absent; an upstream download is not guaranteed to match the included file.
+On macOS or Linux:
 
-To preserve historical evidence, execute a copy or do not save over the originals. Notebook 01 retains an optional `%pip install -q xlrd` cell, unnecessary after installing requirements. The final external-slide comparison cell in notebook 04 is historical and has no recorded output; it is not validated cross-model evidence.
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m ipykernel install --sys-prefix --name explainable-credit-risk --display-name "Explainable Credit Risk"
+.venv/bin/python -m jupyterlab --notebook-dir=notebooks
+```
 
-## Interpretation limits
+Select **Explainable Credit Risk** as the kernel, with `notebooks/` as its working directory for `../data/` paths. Restart between notebooks. Execute copies or avoid saving over recorded outputs; explanation searches can take several minutes.
 
-These historical client observations do not constitute a validated application-underwriting system. The threshold creates a hypothetical decline decision. Test-set threshold tables are descriptive; operational selection needs validation and explicit costs. Inner early-stopping validation sees preprocessing fitted on the full outer training partition; this existing limitation is documented and preserved. Calibration has not been established.
-
-Correlation, ambiguous repayment codes, single-case selection and synthetic neighborhoods limit interpretation. Search failure does not prove counterfactual impossibility, and changing historical inputs is not an established causal intervention. No temporal validation, fairness audit or uncertainty analysis supports deployment claims.
+The optional `%pip install -q xlrd` cell in notebook 01 is unnecessary after installing requirements. Notebook 04 retains a CSV download fallback, but the included file should be used for the documented experiment. Its final external-slide comparison cell is unexecuted and unverified; it is not part of the reported evidence.
 
 ## References
 
-- UCI Machine Learning Repository. *Default of Credit Card Clients*, dataset 350. Source links: `data/README.md`.
-- Lundberg and Lee (2017). *A Unified Approach to Interpreting Model Predictions*.
-- Ribeiro, Singh and Guestrin (2016). *Why Should I Trust You?: Explaining the Predictions of Any Classifier*.
-- Wachter, Mittelstadt and Russell (2017). *Counterfactual Explanations Without Opening the Black Box: Automated Decisions and the GDPR*.
-- Mothilal, Sharma and Tan (2020). *Explaining Machine Learning Classifiers through Diverse Counterfactual Explanations*.
-- Hastie, Tibshirani and Friedman. *The Elements of Statistical Learning*.
-- Huyen. *Designing Machine Learning Systems*.
+- Yeh, I. *Default of Credit Card Clients*, UCI Machine Learning Repository; provenance and attribution are in [data/README.md](data/README.md).
+- Lundberg, S. M. and Lee, S. I. (2017). *A Unified Approach to Interpreting Model Predictions*.
+- Ribeiro, M. T., Singh, S. and Guestrin, C. (2016). *“Why Should I Trust You?”: Explaining the Predictions of Any Classifier*.
+- Wachter, S., Mittelstadt, B. and Russell, C. (2017 preprint). *Counterfactual Explanations without Opening the Black Box: Automated Decisions and the GDPR*.
+- Mothilal, R. K., Sharma, A. and Tan, C. (2020). *Explaining Machine Learning Classifiers through Diverse Counterfactual Explanations*.

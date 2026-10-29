@@ -14,6 +14,16 @@ All three notebooks use 23 predictors and the same stratified 80/20 outer split,
 
 Cell indices in this document are zero-based. XGBoost cell 24 contains a historical manual transcription of the Configuration A neural-network metrics; it is not a live comparison. The saved XGBoost output reports 284 best trees, validation log-loss 0.4291 and selected Excel index 24154 (ID 24155), probability approximately 0.700. Logistic regression explains test index 4387 and reconstructs probability 0.9927 algebraically; this is not the XGBoost applicant or a SHAP decomposition.
 
+### Interpretation evidence in Configuration A
+
+| Analysis | Recorded evidence | Source cells (zero-based) |
+| --- | --- | --- |
+| Logistic coefficients | PAY_0 coefficient 0.661, exp(coefficient) 1.937; EDUCATION_5 -1.040 and MARRIAGE_0 -0.995 are the largest absolute coefficients and represent small, undocumented categories. | Notebook 01, cell 39 |
+| Logistic local calculation | Index 4387: reconstructed probability 0.9927; PAY_0 contributes +4.717 log-odds. This exact equation-based decomposition is not SHAP. | Notebook 01, cells 46, 48–49 |
+| XGBoost importance definitions | Gain/weight/cover ranks: PAY_0 1/8/3, BILL_AMT1 10/1/11, LIMIT_BAL 8/2/15. These are global rankings without effect direction, not explanations of an individual prediction. | Notebook 03, cells 28–29 |
+
+The XGBoost notebook's references to a shared applicant describe preparation for explainers, not completed SHAP/LIME/DiCE experiments. Its correlations do not demonstrate attribution stability under correlated inputs. Those boundaries also apply when reading historical narrative in the notebook; its code and outputs are preserved.
+
 ## Configuration B: 24,000-row PyCaret explainability experiment
 
 This experiment excludes SEX and MARRIAGE, uses 21 predictors and a stratified 75/25 split, seed 42 (18,000 training and 6,000 test rows). **Its metrics must not be ranked against Configuration A as if they shared a test population and inputs.**
@@ -37,9 +47,9 @@ Global SHAP uses 200 sampled test cases, not the full test set. LIME mean weight
 
 The final cell 49 retains manually supplied external-slide XGBoost probabilities 0.22 and 0.495. It has no recorded execution/output. The corresponding slides and model are absent, so these are unverified historical inputs, not reproduced cross-model results.
 
-## Maintenance verification
+## Previous execution verification
 
-Checks used the existing Windows environment, Python 3.14.7 and direct dependency versions in `requirements.txt`. The complete historical software/hardware environment is unknown. No new package installation or upstream dataset download was performed. `pip check` passed with no broken requirements; this is not proof that a fresh installation resolves identically.
+The earlier execution checks used the existing Windows environment, Python 3.14.7 and direct dependency versions in `requirements.txt`. The complete historical software/hardware environment is unknown. Those checks did not install new scientific dependencies or download a replacement dataset. `pip check` passed with no broken requirements; this is not proof that a fresh installation resolves identically. The final publication audit below does not rerun these experiments.
 
 Notebook code was evaluated sequentially in separate Python namespaces with the working directory set to `notebooks/`. IPython's `display` was supplied for notebook display calls. Figures used the noninteractive Agg backend; only directory creation and PNG saving were suppressed in memory. Modeling, preprocessing, splitting, hyperparameters and explanation computations were executed unchanged. Outputs were collected separately and were not saved into the notebooks. The optional `%pip` installation cell and the unverified final external-slide cell were skipped.
 
@@ -111,3 +121,33 @@ d480be11fcbabf6c99247ebb7d12f2cad68ad08570ccdafcbfcb0fb17c360211
 - LIME local surrogate fidelity is not reported. Conditional feature-weight means and different SHAP/LIME stability denominators should be disclosed in any presentation.
 - The applicant fallback in notebook 04 does not explicitly require probability >= 0.50, and its final slide-specific assertion can fail for a fallback applicant. It was not triggered in the checked run; selection logic is preserved.
 - There is no temporal validation, causal identification, fairness evaluation or uncertainty analysis supporting production deployment or general superiority claims.
+
+## Publication audit — 2026-10-28
+
+This audit reviewed the four notebooks and their recorded outputs, documentation, direct dependencies, publication paths and final PowerPoint. It did not train models, regenerate explanations or replace empirical results. Notebook, dataset and PowerPoint file hashes remained unchanged. Earlier execution verification above is reported separately from these lightweight checks.
+
+| Check | Outcome |
+| --- | --- |
+| Notebook integrity | All four notebooks pass nbformat validation; ordinary Python code cells parse successfully. The optional IPython installation cell is not parsed as plain Python. |
+| Input paths and imports | Included Excel/CSV inputs resolve from `notebooks/`. Third-party import roots are covered by the manifest; standard-library imports need no package entry. |
+| Dependencies | Installed versions match all twelve direct pins. `pip check` reports no broken requirements. This does not establish a historical environment or a successful fresh installation. |
+| Setup instructions | The installed JupyterLab CLI supports `--notebook-dir`, and ipykernel supports the documented installation options. README commands use repository-relative paths. Fresh Windows/macOS/Linux installation was not attempted. |
+| Documentation links | Local Markdown targets resolve. The UCI source page was accessible and the PyCaret CSV page returned HTTP 200; neither check replaces the included dataset with an upstream copy. |
+| Presentation publication | The only tracked file under `presentation/` is `final_group_presentation.pptx`. Scoped ignore rules reject scripts, previous decks, reference subfolders, previews and temporary files while allowing that exact file. No presentation file needed removal from the index; no local material was deleted. |
+| Basic publication scan | No credential-pattern matches or tracked virtual environments, credential directories or machine-configuration files were found in the checked tree. This was a lightweight content/path check, not a full security audit or history scan. |
+| Recorded machine path | A saved SHAP warning in notebook 04 cell 34 contains an author's local Windows path. It is retained with the original outputs; removing it would require an explicitly approved output-sanitization change. |
+
+### Presentation against the assignment rubric
+
+The [final PowerPoint](presentation/final_group_presentation.pptx) opened in PowerPoint and all ten slides were rendered for visual inspection. No overflowing text boxes or table cells were detected. The deck itself was not changed during this audit. Its figures are selections/redrawings of recorded evidence, as identified in the embedded source notes; no additional experiments are implied.
+
+| Rubric category | Evidence and remaining delivery advice |
+| --- | --- |
+| Technical Understanding of the Problem — 20 points | The deck distinguishes logistic decomposition, XGBoost importance definitions and network post-hoc explanations, with different configurations explicitly acknowledged in the notes. SHAP is described through reference-based contributions; one brief oral explanation of averaging marginal contributions over sampled feature combinations would strengthen the algorithmic account. This is a recommendation, not an implemented edit. |
+| Communicating the Solution — 20 points | Coefficients, a local decomposition, gain/rank plots, SHAP figures, repeated LIME weights and selected DiCE examples support the narrative. Local cases are not presented as controlled cross-model comparisons. |
+| Explaining Why It Matters — 20 points | The analyst's questions about reasons, consistency and feasible changes connect the methods to credit decisions. Financial cost savings, legal compliance and fairness have not been demonstrated and should not be claimed in delivery. |
+| Delivery and Time Management — 5 points | Four consecutive sections cover slides 1–3, 4–5, 6–7 and 8–10. Their spoken notes contain 279, 289, 282 and 287 words respectively, totaling 1,137. Each has 2:30 scheduled; the ten-minute total leaves no transition/overrun buffer. Rehearse below the maximum rather than relying on word count. |
+
+No standalone speaking script is currently present in the working tree, so a fresh script-versus-notes comparison was not possible. The embedded spoken notes and their scientific source notes were reviewed directly. No numerical grade or measured delivery duration is inferred from the rubric review.
+
+Recommended presentation changes are limited to clarifying SHAP's estimation mechanism in delivery and creating timing margin through rehearsal or an approved script edit. No redesign or note changes were implemented. The documented XGBoost and constrained DiCE reproduction discrepancies remain unresolved.

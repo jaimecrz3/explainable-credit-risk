@@ -1,15 +1,15 @@
 # Data provenance and dictionary
 
-Both existing datasets are preserved unchanged. These checks describe the local copies; no upstream download was used to establish identity.
+The two included files support separate experiments. Counts and checks below describe these copies; no upstream download was used to establish their identity.
 
 | File | Shape | Target counts | Experiment |
 | --- | --- | --- | --- |
-| `default of credit card clients.xls` | 30,000 rows, 25 columns | 23,364 non-default; 6,636 default | A: notebooks 01-03 |
+| `default of credit card clients.xls` | 30,000 rows, 25 columns | 23,364 non-default; 6,636 default | A: notebooks 01–03 |
 | `credit.csv` | 24,000 rows, 24 columns | 18,694 non-default; 5,306 default | B: notebook 04 |
 
 Read the Excel with `header=1`: its first row contains extra labels. It includes ID, 23 predictors and `default payment next month`. The CSV has no ID, calls the latest repayment variable PAY_1 and the target `default`. Notebook 04 renames these to PAY_0 and DEFAULT; all notebooks rename the target to DEFAULT.
 
-The Excel is attributed to [UCI Default of Credit Card Clients](https://archive.ics.uci.edu/dataset/350/default+of+credit+card+clients). Notebook 04 attributes the CSV to [PyCaret datasets](https://github.com/pycaret/datasets/blob/main/data/common/credit.csv), with a legacy fallback URL retained in code. The exact original CSV extraction procedure is undocumented. After normalizing names and numeric types, all 24,000 CSV rows match rows in the included Excel. This does not recover stable client IDs or establish how the subset was selected.
+The Excel is attributed to [UCI Default of Credit Card Clients](https://archive.ics.uci.edu/dataset/350/default+of+credit+card+clients). Notebook 04 attributes the CSV to [PyCaret datasets](https://github.com/pycaret/datasets/blob/main/data/common/credit.csv), with a legacy fallback URL retained in code. PyCaret is the data source, not a modeling dependency. The original CSV extraction procedure is undocumented. After normalizing names and numeric types, all 24,000 CSV rows match rows in the included Excel. This does not recover stable client IDs or establish how the subset was selected.
 
 ## Variables
 
@@ -32,6 +32,6 @@ No values are missing in either file. Negative bill amounts are retained. There 
 
 ## Preservation and reuse
 
-Hashes and verification are in `../RESULTS.md`. No cleaning, resampling or data conversion was performed during repository maintenance. Use the included CSV rather than the download fallback for the recorded experiment.
+File fingerprints and verification are in [RESULTS.md](../RESULTS.md). No cleaning, resampling or data conversion was performed during repository maintenance. Use the included CSV rather than the download fallback for the recorded experiment.
 
-The repository does not establish an independent data redistribution license. Consult source terms and attribution requirements before reuse; no new data license is asserted here.
+The [UCI dataset page](https://archive.ics.uci.edu/dataset/350/default+of+credit+card+clients) lists **CC BY 4.0** (checked 2026-10-28). Its requested citation is: Yeh, I. (2009), *Default of Credit Card Clients*, UCI Machine Learning Repository, DOI 10.24432/C55S3H. Credit that source when reusing the data. The CSV is a renamed subset attributed to PyCaret; its extraction history remains undocumented. The dataset's license does not supply a license for this project's code.
