@@ -89,7 +89,7 @@ cd notebooks
 jupyter lab
 ```
 
-Run the notebooks independently, using the project environment as the kernel. A clean installation has not been fully verified; see [RESULTS.md](RESULTS.md) for reproducibility details.
+Run the notebooks independently, using the project environment as the kernel. 
 
 ## References
 
