@@ -23,6 +23,3 @@ Thumbs.db
 *.tmp
 *.log
 
-# Publish only the final deck; keep presentation working materials local.
-/presentation/*
-!/presentation/final_group_presentation.pptx
