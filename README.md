@@ -1,306 +1,102 @@
 # Explainable Credit Risk
 
-## SHAP, LIME, and Counterfactual Explanations for Black-Box Credit Models
+**University of Toronto | Master of Mathematical Finance | MMF1922H – Data Science**
 
-Machine learning models can achieve strong predictive performance in financial applications, but increasing model complexity often comes at the cost of interpretability.
+Machine learning models can predict whether a customer is likely to default on a loan. But in finance, a prediction alone is not enough. We also need to understand **why a model makes a decision, whether its explanation is reliable, and what its limitations are.**
 
-In credit risk, this creates an important problem: if a model classifies an applicant as high risk, it is not enough to simply say that the model predicts default. Lenders, regulators, analysts, and customers may also want to understand **why the model made that prediction and whether the explanation itself can be trusted**.
+This project explores how different machine learning models can be interpreted and how Explainable AI (XAI) methods help us understand their predictions.
 
-This project investigates three widely used post-hoc explainability methods:
+## Project Objective
 
-- **SHAP**
-- **LIME**
-- **Counterfactual explanations**
+Our research addresses a central question:
 
-Rather than treating these methods as interchangeable, the project asks what each method actually explains and where each one can fail.
+*As models become more complex, how can we explain their predictions, and how much can we trust those explanations?*
 
----
+We investigate three credit-risk classification models:
 
-## Research Question
+- **Logistic Regression:** A relatively transparent model whose predictions can be explained directly through its coefficients.
+- **XGBoost:** A more complex tree-based model, where we examine how different measures of feature importance describe its behavior.
+- **Neural Network:** A model for which we apply SHAP, LIME, and counterfactual explanations to understand individual predictions and their limitations.
 
-> How well can SHAP, LIME, and counterfactual explanations explain the predictions of a black-box credit-risk model, and what limitations remain?
-
-The central idea of the project is that these methods answer different questions:
-
-| Method | Main Question |
-| --- | --- |
-| SHAP | Which features contributed to this prediction? |
-| LIME | What simple model approximates the black box around this applicant? |
-| Counterfactuals | What changes would cause the model's prediction to change? |
-
-These questions are related, but they are not equivalent.
-
-In particular, explaining a model's prediction should not automatically be interpreted as identifying the real-world causes of default.
-
----
+Rather than focusing only on which model predicts best, our goal is to understand **what each explanation method tells us and what it cannot tell us.**
 
 ## Dataset
 
-The project uses the **UCI Default of Credit Card Clients dataset**.
+We use the [UCI Default of Credit Card Clients dataset](https://archive.ics.uci.edu/dataset/350/default+of+credit+card+clients), containing information about 30,000 credit-card customers in Taiwan.
 
-The dataset contains information on **30,000 credit-card customers**, including:
+The data include credit limits, repayment history, bill amounts, previous payments, and demographic information. Our objective is to predict whether a customer will default on their next payment.
 
-- credit limit;
-- repayment status;
-- monthly bill amounts;
-- monthly payment amounts;
-- age;
-- education;
-- marital status;
-- demographic variables.
+The project includes a separate 24,000-record dataset configuration for the neural network explainability experiments. Since these experiments use different features and data splits, their predictive results are not treated as a directly controlled comparison with the other models.
 
-The target variable indicates whether the customer **defaults in the following month**.
+## Explainability Methods
 
-For this project, predicted default probability is used to construct a hypothetical credit-risk decision rule. An applicant with sufficiently high predicted default risk can therefore be treated as a hypothetical declined applicant for the explainability analysis.
+| Method | What does it help us understand? |
+|---|---|
+| **Logistic Regression coefficients** | How each input contributes to the model's prediction |
+| **XGBoost feature importance** | Which variables matter most to the model, depending on how importance is measured |
+| **SHAP** | Which features push a prediction toward higher or lower risk |
+| **LIME** | How a simpler model can approximate an individual prediction locally |
+| **DiCE counterfactuals** | What changes to a customer's inputs could produce a different prediction |
 
----
+SHAP, LIME, and DiCE were implemented on the neural network. The other models were examined using their available interpretation and feature-importance methods.
 
-## Methodology
+## Key Findings
 
-Two classification models are trained on the same data.
+Our experiments highlight several important results.
 
-### Logistic Regression
+**Interpretability does not always mean simplicity.** Logistic Regression allows us to reconstruct individual predictions directly, but correlated variables and categorical encoding can still complicate their interpretation.
 
-Logistic regression is used as an interpretable baseline.
+**Feature importance depends on how it is measured.** In XGBoost, the latest repayment status ranks first using *gain*, but eighth using *weight*. Different measures can tell different stories about the same model.
 
-Its relatively simple functional form allows us to examine how input variables affect the estimated probability of default.
+**Different explanation tools do not always agree.** SHAP and LIME identified only two common features among their four leading explanations for the selected neural-network prediction. Repeated LIME explanations also showed variation.
 
-### XGBoost
+**Changing a prediction is not necessarily a realistic solution.** DiCE successfully generated alternative profiles with lower predicted default risk, but some required unrealistic changes to payment history or financial amounts.
 
-XGBoost is used as the more complex model.
+## Conclusion
 
-Tree ensembles can capture nonlinearities and interactions that a standard logistic regression may miss, but their predictions are substantially harder to interpret directly.
+Our main finding is that **no single explanation method tells the whole story**.
 
-The models are compared using appropriate classification metrics such as:
+Logistic Regression offers direct interpretability, XGBoost provides useful global importance measures, and SHAP, LIME, and DiCE offer complementary ways to investigate complex model predictions.
 
-- ROC-AUC;
-- accuracy;
-- precision;
-- recall;
-- F1 score;
-- confusion matrix.
+However, explanations can depend on the method, vary across runs, or suggest changes that are not feasible in practice.
 
-The purpose is not only to determine which model predicts better, but also to examine the trade-off between predictive flexibility and interpretability.
-
----
-
-## Explainability Experiment
-
-After training the models, the analysis selects **one high-risk applicant from the test set**.
-
-The XGBoost prediction for this same applicant is then explained using SHAP, LIME, and counterfactual explanations.
-
-Using the same observation across all three methods makes it possible to directly compare what each method considers an "explanation."
-
----
-
-## 1. SHAP
-
-SHAP assigns a contribution to each feature based on ideas from cooperative game theory.
-
-For the selected applicant, a SHAP waterfall plot shows how individual variables move the prediction away from the model's baseline prediction.
-
-A global SHAP beeswarm plot is also used to examine which variables are most influential across the test set.
-
-### Stress Test: Correlated Features
-
-The dataset contains groups of strongly related variables, including monthly bill amounts and repayment histories.
-
-For example:
-
-`BILL_AMT1`, `BILL_AMT2`, ..., `BILL_AMT6`
-
-contain overlapping information about the customer's credit position.
-
-The experiment examines how SHAP distributes attribution among correlated predictors.
-
-The objective is not to show that SHAP is mathematically incorrect. Instead, it illustrates that **individual feature attribution can become ambiguous when multiple predictors contain similar information**.
-
----
-
-## 2. LIME
-
-LIME explains an individual prediction by generating observations around the selected applicant, obtaining predictions from the black-box model, and fitting a simpler local surrogate model.
-
-The resulting local feature importance is compared with the SHAP explanation for the same applicant.
-
-### Stress Test: Stability
-
-LIME is run multiple times using different random seeds.
-
-Because the method relies on sampling a synthetic local neighborhood, its explanation can change even when:
-
-- the applicant is unchanged;
-- the XGBoost model is unchanged;
-- the predicted default probability is unchanged.
-
-This experiment evaluates the stability of local explanations.
-
----
-
-## 3. Counterfactual Explanations
-
-Counterfactual explanations ask:
-
-> What would need to be different for this applicant to receive a different model prediction?
-
-Counterfactuals are generated using **DiCE**.
-
-The experiment first allows the algorithm to search relatively freely for changes that move the applicant from high predicted default risk to lower predicted risk.
-
-### Stress Test: Feasibility
-
-An unconstrained counterfactual may recommend unrealistic changes, such as modifying age or other characteristics that cannot reasonably be changed by the applicant.
-
-The experiment therefore compares:
-
-1. **Unconstrained counterfactuals**
-2. **Constrained counterfactuals**, where immutable or unrealistic changes are restricted
-
-This demonstrates that a mathematically valid counterfactual is not necessarily an actionable financial recommendation.
-
----
-
-## Main Hypothesis
-
-The project does not assume that one explainability method is universally superior.
-
-Instead, the hypothesis is that:
-
-> **SHAP, LIME, and counterfactual explanations provide different views of model behavior, but none of them fully turns a black-box model into an inherently interpretable model.**
-
-In particular:
-
-- SHAP provides feature attribution;
-- LIME provides a local approximation;
-- counterfactuals describe changes that cross a model decision boundary.
-
-None of these methods, by itself, establishes causality.
-
----
-
-## Key Distinction
-
-A central theme of the project is the difference between:
-
-**Prediction**
-
-> What outcome does the model predict?
-
-**Attribution**
-
-> Which inputs are associated with the model's prediction?
-
-**Counterfactual explanation**
-
-> Which input changes would change the model's decision?
-
-**Causality**
-
-> Which real-world intervention would actually change the outcome?
-
-These are not the same question.
-
----
+In financial applications, understanding these limitations is just as important as obtaining accurate predictions.
 
 ## Repository Structure
 
 ```text
-explainable-credit-risk/
-│
-├── README.md
-├── requirements.txt
-│
-├── data/
-│   └── README.md
-│
-├── notebooks/
-│   └── 01_explainable_credit_risk.ipynb
-│
-├── src/
-│   ├── preprocessing.py
-│   ├── models.py
-│   └── explainers.py
-│
-├── figures/
-│   ├── model_performance.png
-│   ├── shap_waterfall.png
-│   ├── shap_beeswarm.png
-│   ├── lime_comparison.png
-│   ├── lime_stability.png
-│   └── counterfactual_comparison.png
-│
-└── presentation/
-    └── explainable_credit_risk.pptx
+data/           Dataset files
+notebooks/      Model training, evaluation and explainability
+presentation/   Final group presentation
+README.md       Project overview
+requirements.txt
 ```
 
----
+The `notebooks/` folder contains the Logistic Regression, XGBoost, and two Neural Network notebooks. The neural network notebooks document separate experimental configurations.
 
-## Technologies
+## Getting Started
 
-The project is implemented in Python using libraries including:
+Clone the repository, create a Python environment, and install the required packages:
 
-```text
-pandas
-numpy
-scikit-learn
-xgboost
-shap
-lime
-dice-ml
-matplotlib
+```bash
+python -m pip install -r requirements.txt
 ```
 
-Exact package versions are provided in `requirements.txt`.
+Launch JupyterLab from the `notebooks/` directory:
 
----
+```bash
+cd notebooks
+jupyter lab
+```
 
-## Reproducibility
-
-Random seeds are fixed where possible so that model training, train/test splitting, and explanation experiments can be reproduced.
-
-The main notebook contains the complete experimental workflow:
-
-1. load and inspect the data;
-2. preprocess the variables;
-3. split the data into training and test sets;
-4. train logistic regression;
-5. train XGBoost;
-6. compare predictive performance;
-7. select one high-risk applicant;
-8. generate SHAP explanations;
-9. generate and stress-test LIME explanations;
-10. generate unconstrained and constrained counterfactuals;
-11. compare the three approaches.
-
----
-
-## Project Takeaway
-
-Explainability tools can provide valuable information about how complex machine-learning models behave.
-
-However, an explanation should not automatically be interpreted as proof that a model is fair, causal, stable, or trustworthy.
-
-The project therefore treats explainability methods as **diagnostic tools rather than certificates of trust**.
-
----
+Run the notebooks independently, using the project environment as the kernel. A clean installation has not been fully verified; see [RESULTS.md](RESULTS.md) for reproducibility details.
 
 ## References
 
-Hastie, T., Tibshirani, R., & Friedman, J.  
-*The Elements of Statistical Learning: Data Mining, Inference, and Prediction.*
+Yeh, I. *Default of Credit Card Clients*. UCI Machine Learning Repository.
 
-Huyen, C.  
-*Designing Machine Learning Systems.*
+Lundberg & Lee (2017). *A Unified Approach to Interpreting Model Predictions*.
 
-Lundberg, S. M., & Lee, S. I.  
-*A Unified Approach to Interpreting Model Predictions.*
+Ribeiro, Singh & Guestrin (2016). *“Why Should I Trust You?”: Explaining the Predictions of Any Classifier*.
 
-Ribeiro, M. T., Singh, S., & Guestrin, C.  
-*"Why Should I Trust You?": Explaining the Predictions of Any Classifier.*
-
-Wachter, S., Mittelstadt, B., & Russell, C.  
-*Counterfactual Explanations Without Opening the Black Box: Automated Decisions and the GDPR.*
-
-UCI Machine Learning Repository.  
-*Default of Credit Card Clients Dataset.*
+Mothilal, Sharma & Tan (2020). *Explaining Machine Learning Classifiers through Diverse Counterfactual Explanations*.

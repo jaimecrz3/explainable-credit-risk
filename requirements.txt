@@ -1,0 +1,14 @@
+# Direct dependencies installed in the checked local Python 3.14.7 environment.
+# Not a recovered historical environment or a transitive lockfile.
+numpy==2.5.3
+pandas==3.0.6
+scikit-learn==1.9.1
+xgboost==3.4.1
+shap==0.52.0
+lime==0.2.0.1
+dice-ml==0.12
+matplotlib==3.11.2
+xlrd==2.0.2
+nbformat==5.11.1
+jupyterlab==4.6.4
+ipykernel==7.4.0
